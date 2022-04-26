@@ -1,0 +1,38 @@
+
+observations gathered from results.csv file containing error/repair pairs and error/repair frequencies
+
+for rows in results.csv that are empty, the mistake was a spacing issue
+for rows in results.csv without frequencies or equal frequencies either:
+    - the typo or repair are not english words in the US-SUBLTEX corpus
+    - both the typo and repair are the same word with different capitliazation within the word
+    - an omission occured
+
+if the error and repair entries are numbers, the repair increments one of the numbers by 1
+this is likely from updating a version number (ie. [1.1.4,1.1.5],[0.2,0.3],etc.)
+
+in cases without omissions:
+
+when error frequency = 0 and repair frequency > 0, the error is a mispeeling of the repair:
+    - mispellings are often:
+        two letters swapped- ie. recieve/receive
+        an extra doubled letter- ie. begginer/beginner
+        an omitted letter- ie. cntribute/contribute
+        an incorrect letter adjacent to the correct letter on the keyboard- ie. conferting/converting
+
+
+when error frequency > 0 and repair frequency > 0:
+    - the error and repair are the same noun in singular & plural form. The user often removes
+      or adds the "s"
+    - the error and repair are antonyms (ie [push,pop] [minimuim,maximum], etc)
+    - the error and repair are the same length and 1 letter off (ie [to,of],[is,it],[is,it])
+      these are usually two letter words
+    - the error and repair are closely related in part of speech (ie. [so,but],[be,able])
+
+interestingly, in cases where both the error word and repair word are both found in US-SUBLTEX,
+the error word often has a higher frequency than the repair word.
+
+in cases with omissions:
+
+the omitted word is often an article, a single character or punctuation.
+It is rare that an omitted word is long/multisyllabic
+
