@@ -5,32 +5,26 @@ import nltk
 import csv
 import string
 
-#global
+#list of entries 
 items = []
-entryCount = 0
+
 
 #parse JSONL with indent to dict
-def parse(filename,entryCount):
+def parse(filename,total):
     #open JSONL
+    print("Starting parse...")
     with open(filename,'r',encoding='utf8', errors='ignore') as f:
         #remove first and last brackets
         data = f.read()[1:-2]
         #extract JSON item
         data = data.split('}\n{')
-        #extract first 200 entires to items 
-        totalcount = 0
-        while entryCount<200:
-            item = data[totalcount]
+        #extract next 200 entires to items 
+        for i in range(total,200+total):
+            item = data[i]
             #parse item to python dict type
             item_dict = json.loads('{'+item+'}')
-
-            pair = getTypoFromSentence(item_dict)
-            getfreqs(pair)
-            if(len(pair)==4 and pair[2]!=0 and pair[3]!=0):
-                #append parsed item to item list
-                items.append(pair)
-                entryCount+=1
-            totalcount+=1
+            #append parsed item to item list
+            items.append(item_dict)
 
 #splits sentence into constituent parts (NLTK)
 #takes sentence, returns array of words
@@ -73,38 +67,57 @@ def getWrongPair(s1,s2):
     errorPair[1] = ''
     return errorPair
 
-#takes dict of typos, returns array of typo pairs
-def getTypoFromSentence(item):
+#takes dict entry of typos, returns array of typo pair
+def getTypoFromSentences(list,size):
     #array of pairs of error/repair words
     pairs = []
-    numMistakes = len(item['edits'])
-    for j in range(numMistakes):
-        #extract incorrected and fixed sentences from dict
-        src_sent = item['edits'][j]['src']['text']
-        tgt_sent = item['edits'][j]['tgt']['text']
-        #tokenize sentences into array of words
-        tokenedsrc = tokenizeElem(src_sent)
-        tokenedtgt = tokenizeElem(tgt_sent)
-        #isolate the error word and fixed word
-        wrongPair = getWrongPair(tokenedsrc,tokenedtgt)
-        #append to 
-        pairs.append(wrongPair)
+    lendict = len(list)
+    #loop through dict
+    for i in range(size,lendict):
+        numMistakes = len(items[i]['edits'])
+        for j in range(numMistakes):
+            #extract incorrected and fixed sentences from dict
+            src_sent = items[i]['edits'][j]['src']['text']
+            tgt_sent = items[i]['edits'][j]['tgt']['text']
+            #tokenize sentences into array of words
+            tokenedsrc = tokenizeElem(src_sent)
+            tokenedtgt = tokenizeElem(tgt_sent)
+            #isolate the error word and fixed word
+            wrongPair = getWrongPair(tokenedsrc,tokenedtgt)
+            #append to 
+            pairs.append(wrongPair)
     return pairs
 
-#converts list of error/repair arrays into csv file
-def writeTocsv(list):
-    header = ['mistake','fix']
-    with open('results.csv','w',newline='') as csvfile:
+#converts array of error/repair/freq1/freq2 arrays into csv file, applies filter to results
+def writeTocsv(list,size,total):
+    header = ['mistake','fix','mistake freq','fix freq']
+    with open('results.csv','a',newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(header)
-        for i in range(len(list)):
+        for i in range(total,len(list)):
             #before writing to csv, append frequencies
+            if size>200:
+                break
             getfreqs(list[i])
-            print(list[i])
-            try:
-                writer.writerow(list[i])
-            except:
-                writer.writerow("error: non english character")
+            #s = number element in csv
+            #i = i in loop
+            #t = total number of lines parsed
+            print(f's:{size} i:{i} t:{total} - {list[i]}')
+            total+=1
+            #only write if both error/repair are words with frequency >0
+            if(len(list[i])==4): 
+                if list[i][2] !=0 and list[i][3]!= 0:
+                    size+=1
+                    print(size,total)
+                    try:
+                        #add filter function here for stuff like:
+                        #clear mispellings, scrambles, etc
+                        print("writing to csv")
+                        writer.writerow(list[i])
+                    except:
+                        writer.writerow("error: non english character")
+    csvfile.close()
+    return size,total
 
 #checks pairs of words against US-SUBLTEX, appends freq
 def getfreqs(pair):
@@ -130,12 +143,15 @@ def getfreqs(pair):
 
 
 if __name__ == '__main__':
-    #parse jsonl to dict
-    parse('github-typo-corpus.v1.0.0.jsonl',0)
-    #convert dict to array of typo pairs
-    
-    #write array of typo pairs to csv (also add frequencies)
-    writeTocsv(items)
+    size = 0
+    total = 0
+    #repeats until 200 elements in csv output 
+    while size<200:
+        parse('github-typo-corpus.v1.0.0.jsonl',total)
+        #convert dict to array of typo pairs
+        data = getTypoFromSentences(items,size)
+        #write array of typo pairs to csv (also add frequencies)
+        size,total = writeTocsv(data,size,total)
     print('complete')
 
  
